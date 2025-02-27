@@ -22,6 +22,7 @@ load_dotenv()
 
 class TextBoxLens(tk.Tk):
     def __init__(self, root):
+        #Load model weights
         self.detect_model = YOLO(os.getenv('YOLO_weight'))
         self.read_model = MangaOcr(os.getenv('MangaOCR_weight'))
         self.tokenizer_ja = AutoTokenizer.from_pretrained(os.getenv('ja_en_token'))
@@ -29,20 +30,26 @@ class TextBoxLens(tk.Tk):
         self.tokenizer_zh = AutoTokenizer.from_pretrained(os.getenv('zh_en_token'))
         self.model_zh = AutoModelForSeq2SeqLM.from_pretrained(os.getenv('zh_en_weight'))
 
+        #Set root
         self.root = root
-
+        
+        #Create Canvas to add translations
         self.bg_canvas = tk.Canvas(self.root, width=GetSystemMetrics(0), height=GetSystemMetrics(1), background='green', bd=0, highlightthickness=0)
         self.bg_canvas.pack()
-        #Temp var
+
+        #Temp var to prevent Python garbage collection
         self.screen_img = None
         self.list_temp_imgs = []
         self.temp_img = None
 
+        #Make background and Canvas can be click through
         self.hwnd = self.bg_canvas.winfo_id()
         self.setClickthrough()
+
+        #Run OCR right after initialization complete
         # self.get_bounding_boxes()
 
-        #Key binds
+        #Global key binding
         keyboard.add_hotkey('ctrl+space', self.get_bounding_boxes)
         keyboard.add_hotkey('ctrl+Esc', self.quit)
         keyboard.add_hotkey('ctrl+n', self.clear_screen)
@@ -57,14 +64,21 @@ class TextBoxLens(tk.Tk):
         except Exception as e:
             print(e)
 
-    def translate_text(self, text, tokenizer, model):
+    def translate_text(self, 
+                       text: str, 
+                       tokenizer: AutoTokenizer, 
+                       model: AutoModelForSeq2SeqLM) ->  str:
         input_ids = tokenizer.encode(text, return_tensors="pt")
         outputs = model.generate(input_ids)
         decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
         return decoded
     
-    def get_wrapped_text(self, text: str,
-                     line_length: int, fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.4, thickness=1):
+    def get_wrapped_text(self, 
+                        text: str,
+                        line_length: int, 
+                        fontFace: int = cv2.FONT_HERSHEY_SIMPLEX, 
+                        fontScale: float = 0.4, 
+                        thickness: int = 1) -> list:
         lines = ['']
         for word in text.split():
             line = f'{lines[-1]} {word}'.strip()
@@ -74,17 +88,20 @@ class TextBoxLens(tk.Tk):
                 lines.append(word)
         return lines
     
-    def get_optimal_font_scale(self, text, width, font_face = cv2.FONT_HERSHEY_SIMPLEX, thickness = 1):
+    def get_optimal_font_scale(self, 
+                               text: str, 
+                               width: int, 
+                               font_face: int = cv2.FONT_HERSHEY_SIMPLEX, 
+                               thickness: int = 1) -> int | int | float:
         for scale in reversed(range(0, 60, 1)):
             textSize = cv2.getTextSize(text, fontFace=font_face, fontScale=scale/10, thickness=thickness)
             new_width = textSize[0][0]
             line_height = textSize[0][1]
             if (new_width <= width+10 or scale/10 <= 0.3):
                 return new_width, line_height, scale/10
-        return 1
+        return width, 0, 1
 
-    def add_text_to_image(
-        self,
+    def add_text_to_image(self,
         image_rgb: np.ndarray,
         label: str,
         top_left_xy: tuple = (0, 0),
@@ -95,7 +112,7 @@ class TextBoxLens(tk.Tk):
         bg_color_rgb: tuple | None = None,
         outline_color_rgb: tuple | None = None,
         line_spacing: float = 1,
-    ):
+    ) -> np.array:
         """
         Adds text (including multi line text) to images.
         You can also control background color, outline color, and line spacing.
@@ -171,106 +188,83 @@ class TextBoxLens(tk.Tk):
 
         return image_rgb
 
-    def replace_text(self, img):
+    def replace_text(self, img: Image) -> np.array:
         read_text = self.read_model(img)
-        if not read_text:
+        if not read_text: # Not detect text
             return np.asarray(img)
         try:
             detectLanguage = detect(read_text)
-        except:
+        except: # Not detect language
             return np.asarray(img)
         if detectLanguage == 'ja':
             translated_text = self.translate_text(read_text, self.tokenizer_ja, self.model_ja)
         elif 'zh' in detectLanguage:
             translated_text = self.translate_text(read_text, self.tokenizer_zh, self.model_zh)
-        else: 
+        else: # Language not defined
             return np.asarray(img)
-        print(read_text, '-',detectLanguage,'->', translated_text)
+        # print(read_text, '-',detectLanguage,'->', translated_text)
         lines = self.get_wrapped_text(translated_text, img.size[0])
-        lines = list(filter(None, lines))
-        line_width, line_height, font_scale = self.get_optimal_font_scale(max(lines, key=len), img.size[0])
-        max_w = line_width + 10 if line_width > img.size[0] else img.size[0]
-        max_h = line_height*1.2*(len(lines)+1) if line_height*1.2*(len(lines)+1) > img.size[1] else img.size[1]
-        empty_img = 255 * np.ones((int(max_h), int(max_w), 3), dtype=np.uint8)
+        lines = list(filter(None, lines))                                                                       #________
+        line_width, line_height, font_scale = self.get_optimal_font_scale(max(lines, key=len), img.size[0])     #        \
+        max_w = line_width + 10 if line_width > img.size[0] else img.size[0]                                    #         \ Trying to make the largest place to put text
+        max_h = line_height*1.2*(len(lines)+1) if line_height*1.2*(len(lines)+1) > img.size[1] else img.size[1] #         /
+        empty_img = 255 * np.ones((int(max_h), int(max_w), 3), dtype=np.uint8)                                  #________/
         return self.add_text_to_image(
             empty_img,
             '\n'.join(lines),
             top_left_xy=(0, 0),
             font_scale=font_scale
         )
-        # empty_img = Image.new("RGB", (new_w, new_h), (255,255,255))
-        # new_img = ImageDraw.Draw(empty_img)
-        # new_img.text((0, 0), '\n'.join(lines), fill="#000", font=font)
-        # return empty_img
     
-    def clear_screen(self):
+    def clear_screen(self) -> None:
+        #Clear the temp list
         self.list_temp_imgs.clear()
         # clear the canvas 
         self.bg_canvas.delete('all') 
         self.bg_canvas.update()
 
-    def get_bounding_boxes(self):
-        # print("trigger")
-        # clear_temp_dir()
-        # global bbox_recs, abcd
-        # print(self.list_temp_imgs)
+    def get_bounding_boxes(self) -> None:
         self.clear_screen()
         if not self.bg_canvas.winfo_children():
             self.screen_img = pyautogui.screenshot()
-            # img.show()
             # Convert the screenshot to a numpy array
             frame = np.array(self.screen_img)
-
             # Convert it from BGR(Blue, Green, Red) to
             # RGB(Red, Green, Blue)
             detect_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-            results = self.detect_model.predict(source=detect_frame, imgsz=1280, conf=0.1, classes = [0, 1], agnostic_nms=True) #
-            bounding_boxes = results[0].boxes.xyxy.tolist()
+            results = self.detect_model.predict(source=detect_frame, imgsz=1280, conf=0.1, classes = [0, 1], agnostic_nms=True) #Get predicted bounding boxes
+            bounding_boxes = results[0].boxes.xyxy.tolist() # Get coor
             if bounding_boxes and len(bounding_boxes) != 0:
-                bounding_boxes.sort(key=lambda x: x[1])
+                bounding_boxes.sort(key=lambda x: x[1]) # Sort based on top of bboxes
                 for coor in bounding_boxes:
                     coor = list(map(int, coor)) #Convert float to int 
-                    # temp_filename = 'temp/' + str(uuid.uuid4()) + '.png'
-                    # cv2.imwrite(temp_filename, tempo_image)
-                    # temp_image = ImageTk.PhotoImage(Image.open(temp_filename))
                     self.temp_image = ImageTk.PhotoImage(Image.fromarray(self.replace_text(self.screen_img.crop((coor[0],coor[1], coor[2],coor[3])))))
-                    # tempo_image.show()
-                    # print(read_model(img.crop((coor[0],coor[1], coor[2],coor[3]))))
                     self.list_temp_imgs.append(self.temp_image)
-                    # abcd.append(tempo_image)
-                    # # self.bg_canvas.create_rectangle(100, 100, 1000, 1000, fill='red')
                     self.bg_canvas.create_image(coor[0], coor[1], image = self.temp_image, anchor=tk.NW)
                     self.bg_canvas.update()
                 self.bg_canvas.pack()
-            # root.after(10000, get_bounding_boxes)  # reschedule event in 2 seconds
+            # root.after(2000, get_bounding_boxes)  # reschedule event in 2 seconds
 
-    def quit(self):
+    def quit(self) -> None:
         self.root.destroy()
+
 if __name__ == '__main__':
-    # Dimensions
-    width = GetSystemMetrics(0) #self.winfo_screenwidth()
-    height = GetSystemMetrics(1) #self.winfo_screenheight()
+    # Get screen size
+    width = GetSystemMetrics(0)
+    height = GetSystemMetrics(1)
 
     root = tk.Tk()
+    #App config
     root.geometry('%dx%d' % (width, height))
     root.attributes('-fullscreen', False)
     root.title("MangaLens")
     root.attributes("-topmost", 1)
-    root.attributes('-transparentcolor', 'green')
+    root.attributes('-transparentcolor', 'green')    # Color green will become transparent
     root.wm_attributes('-transparentcolor', 'green')
     root.wm_attributes("-topmost", 1)
     root.config(background='green') 
-    # root.attributes("-alpha", 0.75)
-    # root.overrideredirect(True)
     root.wm_attributes('-fullscreen', True)
+
     main_screen = TextBoxLens(root)
-    
 
-
-
-
-    # frame = ImageTk.PhotoImage(file="result.jpg")
-    # bg.create_image(1920/2, 1080/2, image=frame)
-    # bg.pack()
     root.mainloop()
