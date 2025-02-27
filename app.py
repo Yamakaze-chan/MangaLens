@@ -7,20 +7,27 @@ import pyautogui
 import numpy as np
 import cv2
 from PIL import Image, ImageTk
-from lib.manga_ocr import MangaOcr
+
+try:
+    from lib.manga_ocr import MangaOcr #You can install through PIP. Please read this Github repo for more information - https://github.com/kha-white/manga-ocr
+except:
+    from manga_ocr import MangaOcr
+
 from langdetect import detect
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import keyboard
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 class TextBoxLens(tk.Tk):
     def __init__(self, root):
-        self.detect_model = YOLO(r"pretrained_models/best1.pt")  # pretrained YOLO12n model
-        self.read_model = MangaOcr()
-        # read_model = ""
-        self.tokenizer_ja = AutoTokenizer.from_pretrained(r"D:\datatrain\ja_en")
-        self.model_ja = AutoModelForSeq2SeqLM.from_pretrained(r"D:\datatrain\ja_en")
-        self.tokenizer_zh = AutoTokenizer.from_pretrained(r"D:\datatrain\zh_en")
-        self.model_zh = AutoModelForSeq2SeqLM.from_pretrained(r"D:\datatrain\zh_en")
+        self.detect_model = YOLO(os.getenv('YOLO_weight'))
+        self.read_model = MangaOcr(os.getenv('MangaOCR_weight'))
+        self.tokenizer_ja = AutoTokenizer.from_pretrained(os.getenv('ja_en_token'))
+        self.model_ja = AutoModelForSeq2SeqLM.from_pretrained(os.getenv('ja_en_weight'))
+        self.tokenizer_zh = AutoTokenizer.from_pretrained(os.getenv('zh_en_token'))
+        self.model_zh = AutoModelForSeq2SeqLM.from_pretrained(os.getenv('zh_en_weight'))
 
         self.root = root
 
