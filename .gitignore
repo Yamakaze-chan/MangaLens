@@ -1,0 +1,6 @@
+lib
+pretrained_models
+translate
+data.yaml
+yolov12n.pt
+assets
