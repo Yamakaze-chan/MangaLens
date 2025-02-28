@@ -4,7 +4,7 @@
 This project is real-time application that can OCR your screen and detect text in page of your manga.
 
 ## Demo
-[![MangaLensDemo](MangaLensDemo_thumbnail.png)](MangaLensDemo.mp4)
+<video src="MangaLensDemo.mp4"></video>
 ## Installation
 You can install and run (and modify) with these steps:
 - Step 1: Clone this repository
