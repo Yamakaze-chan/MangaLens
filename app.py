@@ -50,9 +50,10 @@ class TextBoxLens(tk.Tk):
         # self.get_bounding_boxes()
 
         #Global key binding
-        keyboard.add_hotkey('ctrl+space', self.get_bounding_boxes)
-        keyboard.add_hotkey('ctrl+Esc', self.quit)
-        keyboard.add_hotkey('ctrl+n', self.clear_screen)
+        # keyboard.add_hotkey('ctrl+space', self.get_bounding_boxes)
+        keyboard.add_hotkey('`', self.get_bounding_boxes)
+        keyboard.add_hotkey('ctrl+alt', self.quit)
+        keyboard.add_hotkey('Shift+`', self.clear_screen)
 
     def setClickthrough(self):
         print("setting window properties")

@@ -8,6 +8,10 @@ This project is real-time application that can OCR your screen and detect text i
 
 https://github.com/user-attachments/assets/3b693bc5-8470-48cb-8f22-1a31f5d85b84
 
+## Key Combination Usage
+- <code>`</code> (*Key Code: 192*) : detect and translate again
+- `Shift` + <code>`</code> : Clear screen
+- `Ctrl` + `Alt` : Quit
 
 ## Installation
 You can install and run (and modify) with these steps:
