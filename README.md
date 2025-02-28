@@ -4,7 +4,7 @@
 This project is real-time application that can OCR your screen and detect text in page of your manga.
 
 ## Demo
-<iframe src="https://drive.google.com/file/d/1FJm20oze3H05ZFhITgM3CqcUnPHi-F9G/preview" width="640" height="480" allow="autoplay"></iframe>
+<video src='https://drive.google.com/file/d/1FJm20oze3H05ZFhITgM3CqcUnPHi-F9G/preview'></video>
 ## Installation
 You can install and run (and modify) with these steps:
 - Step 1: Clone this repository
