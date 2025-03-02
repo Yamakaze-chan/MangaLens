@@ -13,6 +13,9 @@ https://github.com/user-attachments/assets/3b693bc5-8470-48cb-8f22-1a31f5d85b84
 - `Shift` + <code>`</code> : Clear screen
 - `Ctrl` + `Alt` : Quit
 
+## How to use
+Wait until your terminal show `OCR ready` then press <code>`</code> to start (Re-press if it not detect and show translation)
+
 ## Installation
 You can install and run (and modify) with these steps:
 - Step 1: Clone this repository
