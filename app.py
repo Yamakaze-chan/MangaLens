@@ -12,8 +12,10 @@ try:
     from lib.manga_ocr import MangaOcr #You can install through PIP. Please read this Github repo for more information - https://github.com/kha-white/manga-ocr
 except:
     from manga_ocr import MangaOcr
-
-from langdetect import detect
+try:
+    from lib.lingua import Language, LanguageDetectorBuilder
+except:
+    from lingua import Language, LanguageDetectorBuilder
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import keyboard
 import os
@@ -29,6 +31,8 @@ class TextBoxLens(tk.Tk):
         self.model_ja = AutoModelForSeq2SeqLM.from_pretrained(os.getenv('ja_en_weight'))
         self.tokenizer_zh = AutoTokenizer.from_pretrained(os.getenv('zh_en_token'))
         self.model_zh = AutoModelForSeq2SeqLM.from_pretrained(os.getenv('zh_en_weight'))
+        self.languages = [Language.JAPANESE, Language.CHINESE]
+        self.detector = LanguageDetectorBuilder.from_languages(*self.languages).build()
 
         #Set root
         self.root = root
@@ -191,11 +195,13 @@ class TextBoxLens(tk.Tk):
 
     def replace_text(self, img: Image) -> np.array:
         read_text = self.read_model(img)
+        print(read_text)
         if not read_text: # Not detect text
             return np.asarray(img)
         try:
-            detectLanguage = detect(read_text)
-        except: # Not detect language
+            detectLanguage = self.detector.detect_language_of((read_text)).iso_code_639_1.name.lower()
+        except Exception as e: # Not detect language
+            print(e)
             return np.asarray(img)
         if detectLanguage == 'ja':
             translated_text = self.translate_text(read_text, self.tokenizer_ja, self.model_ja)
