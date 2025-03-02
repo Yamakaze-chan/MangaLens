@@ -1,4 +1,3 @@
-lib
 pretrained_models
 translate
 data.yaml
@@ -7,3 +6,4 @@ assets
 .env
 test_translate.py
 model
+lib/manga_ocr/models
