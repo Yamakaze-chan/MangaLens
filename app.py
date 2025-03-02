@@ -195,11 +195,11 @@ class TextBoxLens(tk.Tk):
 
     def replace_text(self, img: Image) -> np.array:
         read_text = self.read_model(img)
-        print(read_text)
         if not read_text: # Not detect text
             return np.asarray(img)
         try:
             detectLanguage = self.detector.detect_language_of((read_text)).iso_code_639_1.name.lower()
+            # print(read_text, '-->', detectLanguage)
         except Exception as e: # Not detect language
             print(e)
             return np.asarray(img)
@@ -209,7 +209,7 @@ class TextBoxLens(tk.Tk):
             translated_text = self.translate_text(read_text, self.tokenizer_zh, self.model_zh)
         else: # Language not defined
             return np.asarray(img)
-        # print(read_text, '-',detectLanguage,'->', translated_text)
+        print(read_text, '-',detectLanguage,'->', translated_text)
         lines = self.get_wrapped_text(translated_text, img.size[0])
         lines = list(filter(None, lines))                                                                       #________
         line_width, line_height, font_scale = self.get_optimal_font_scale(max(lines, key=len), img.size[0])     #        \
@@ -239,7 +239,7 @@ class TextBoxLens(tk.Tk):
             # Convert it from BGR(Blue, Green, Red) to
             # RGB(Red, Green, Blue)
             detect_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = self.detect_model.predict(source=detect_frame, imgsz=1280, conf=0.1, classes = [0, 1], agnostic_nms=True) #Get predicted bounding boxes
+            results = self.detect_model.predict(source=detect_frame, imgsz=1280, conf=0.2, classes = [0, 1], agnostic_nms=True, iou=0.5) #Get predicted bounding boxes
             bounding_boxes = results[0].boxes.xyxy.tolist() # Get coor
             if bounding_boxes and len(bounding_boxes) != 0:
                 bounding_boxes.sort(key=lambda x: x[1]) # Sort based on top of bboxes
