@@ -41,7 +41,7 @@ cd . > .env
 - Step 6: Open `.env` and add this
 ```
 #Yolo weight
-YOLO_weight = MangaLens/best1.pt
+YOLO_weight = MangaLens/best2.pt
 
 #MangaOCR weight
 MangaOCR_weight = ""
