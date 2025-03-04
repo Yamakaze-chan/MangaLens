@@ -2,7 +2,6 @@ pretrained_models
 translate
 data.yaml
 yolov12n.pt
-assets
 .env
 test_translate.py
 model

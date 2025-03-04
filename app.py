@@ -1,12 +1,11 @@
 import tkinter as tk
 from win32api import GetSystemMetrics
-import win32gui
-import win32con
 from ultralytics import YOLO
 import pyautogui
 import numpy as np
 import cv2
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw, ImageFont
+import re
 
 try:
     from lib.manga_ocr import MangaOcr #You can install through PIP. Please read this Github repo for more information - https://github.com/kha-white/manga-ocr
@@ -101,6 +100,12 @@ class TextBoxLens(tk.Tk):
         self.model_zh = AutoModelForSeq2SeqLM.from_pretrained(os.getenv('zh_en_weight'))
         self.languages = [Language.JAPANESE, Language.CHINESE]
         self.detector = LanguageDetectorBuilder.from_languages(*self.languages).build()
+        if os.getenv('en_vi_weight'):
+            self.tokenizer_en2vi = AutoTokenizer.from_pretrained(os.getenv('en_vi_token'))
+            self.model_en2vi = AutoModelForSeq2SeqLM.from_pretrained(os.getenv('en_vi_weight'))
+        else: 
+            self.tokenizer_en2vi = None
+            self.model_en2vi = None
 
         #Set root
         self.root = root
@@ -117,10 +122,6 @@ class TextBoxLens(tk.Tk):
         self.list_temp_imgs = []
         self.temp_img = None
 
-        #Make background and Canvas can be click through
-        # self.hwnd = self.bg_canvas.winfo_id()
-        # self.setClickthrough()
-
         #Run OCR right after initialization complete
         # self.get_bounding_boxes()
 
@@ -129,21 +130,9 @@ class TextBoxLens(tk.Tk):
         keyboard.add_hotkey('ctrl+alt', self.quit)
         keyboard.add_hotkey('Shift+`', self.clear_screen)
 
-        # keyboard.add_hotkey('Shift+Q', self.setClickthrough)
         keyboard.add_hotkey('Shift+W', self.getTranslateArea)
 
-    # def setClickthrough(self):
-    #     print("setting window properties")
-    #     try:
-    #         styles = win32gui.GetWindowLong(self.hwnd, win32con.GWL_EXSTYLE)
-    #         styles = win32con.WS_EX_TRANSPARENT
-    #         win32gui.SetWindowLong(self.hwnd, win32con.GWL_EXSTYLE, styles)
-    #         # win32gui.SetLayeredWindowAttributes(hwnd, 0, 255, win32con.LWA_ALPHA)
-    #     except Exception as e:
-    #         print(e)
-
     def getTranslateArea(self):
-        # print(measure_drag_size())
         self.translate_area = measure_translate_area()
 
     def translate_text(self, 
@@ -154,6 +143,24 @@ class TextBoxLens(tk.Tk):
         outputs = model.generate(input_ids)
         decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
         return decoded
+    
+    def translate_en2vi(self, en_text: str) -> str:
+        input_ids = self.tokenizer_en2vi(en_text, return_tensors="pt").input_ids
+        output_ids = self.model_en2vi.generate(
+            input_ids,
+            decoder_start_token_id = self.tokenizer_en2vi.lang_code_to_id["vi_VN"],
+            num_return_sequences=1,
+            # # With sampling
+            # do_sample=True,
+            # top_k=100,
+            # top_p=0.8,
+            # With beam search
+            num_beams=5,
+            early_stopping=True
+        )
+        vi_text = self.tokenizer_en2vi.batch_decode(output_ids, skip_special_tokens=True)
+        vi_text = " ".join(vi_text)
+        return vi_text
     
     def get_wrapped_text(self, 
                         text: str,
@@ -169,106 +176,47 @@ class TextBoxLens(tk.Tk):
             else:
                 lines.append(word)
         return lines
+
+    def gettxtsize(self, text, font):
+        left, top, right, bottom = font.getbbox(text)
+        width = right - left
+        height = bottom - top
+        return width, height
+
+    def text_wrap(self, text, font, max_width):
+        lines = []
+        if self.gettxtsize(text, font)[0] <= max_width - 5:
+            print(self.gettxtsize(text, font)[0], max_width)
+            lines.append(text) 
+        else:
+            words = re.split(r'(\W+)', text)
+            print(words)
+            i = 0
+            while i < len(words):
+                line = ''         
+                while i < len(words) and self.gettxtsize(line + words[i], font)[0] <= max_width - 5:   
+                    line = line + words[i]
+                    i += 1
+                if not line:
+                    line = words[i]
+                    i += 1
+                if line.strip() != '':
+                    lines.append(line.strip())    
+        return lines
     
-    def get_optimal_font_scale(self, 
-                               text: str, 
-                               width: int, 
-                               font_face: int = cv2.FONT_HERSHEY_SIMPLEX, 
-                               thickness: int = 1) -> int | int | float:
-        for scale in reversed(range(0, 60, 1)):
-            textSize = cv2.getTextSize(text, fontFace=font_face, fontScale=scale/10, thickness=thickness)
-            new_width = textSize[0][0]
-            line_height = textSize[0][1]
-            if (new_width <= width+10 or scale/10 <= 0.3):
-                return new_width, line_height, scale/10
-        return width, 0, 1
-
-    def add_text_to_image(self,
-        image_rgb: np.ndarray,
-        label: str,
-        top_left_xy: tuple = (0, 0),
-        font_scale: float = 1,
-        font_thickness: float = 1,
-        font_face=cv2.FONT_HERSHEY_SIMPLEX,
-        font_color_rgb: tuple = (0, 0, 0),
-        bg_color_rgb: tuple | None = None,
-        outline_color_rgb: tuple | None = None,
-        line_spacing: float = 1,
-    ) -> np.array:
-        """
-        Adds text (including multi line text) to images.
-        You can also control background color, outline color, and line spacing.
-
-        outline color and line spacing adopted from: https://gist.github.com/EricCousineau-TRI/596f04c83da9b82d0389d3ea1d782592
-        """
-        OUTLINE_FONT_THICKNESS = 3 * font_thickness
-
-        im_h, im_w = image_rgb.shape[:2]
-
-        for line in label.splitlines():
-            x, y = top_left_xy
-
-            # ====== get text size
-            if outline_color_rgb is None:
-                get_text_size_font_thickness = font_thickness
-            else:
-                get_text_size_font_thickness = OUTLINE_FONT_THICKNESS
-
-            (line_width, line_height_no_baseline), baseline = cv2.getTextSize(
-                line,
-                font_face,
-                font_scale,
-                get_text_size_font_thickness,
-            )
-            line_height = line_height_no_baseline + baseline
-
-            if bg_color_rgb is not None and line:
-                # === get actual mask sizes with regard to image crop
-                if im_h - (y + line_height) <= 0:
-                    sz_h = max(im_h - y, 0)
-                else:
-                    sz_h = line_height
-
-                if im_w - (x + line_width) <= 0:
-                    sz_w = max(im_w - x, 0)
-                else:
-                    sz_w = line_width
-
-                # ==== add mask to image
-                if sz_h > 0 and sz_w > 0:
-                    bg_mask = np.zeros((sz_h, sz_w, 3), np.uint8)
-                    bg_mask[:, :] = np.array(bg_color_rgb)
-                    image_rgb[
-                        y : y + sz_h,
-                        x : x + sz_w,
-                    ] = bg_mask
-
-            # === add outline text to image
-            if outline_color_rgb is not None:
-                image_rgb = cv2.putText(
-                    image_rgb,
-                    line,
-                    (x, y + line_height_no_baseline),  # putText start bottom-left
-                    font_face,
-                    font_scale,
-                    outline_color_rgb,
-                    OUTLINE_FONT_THICKNESS,
-                    cv2.LINE_AA,
-                )
-            # === add text to image
-            image_rgb = cv2.putText(
-                image_rgb,
-                line,
-                (x, y + line_height_no_baseline),  # putText start bottom-left
-                font_face,
-                font_scale,
-                font_color_rgb,
-                font_thickness,
-                cv2.LINE_AA,
-            )
-            top_left_xy = (x, y + int(line_height * line_spacing))
-
-        return image_rgb
+    
+    def draw_text(self, font, text, x, y, x_max, y_max):    
+        image_size = x_max - x
+        line_height = self.gettxtsize(text, font)[1] + 10
+        print(x_max, y_max)
+        lines = self.text_wrap(text,font, image_size)
+        w = x_max - x
+        h = y + (line_height*len(lines)) if y + (line_height*len(lines)) > y_max - y else y_max - y
+        add_text_img = Image.fromarray(255 * np.ones((int(h), int(w), 3), dtype=np.uint8) )
+        for line in lines:
+            ImageDraw.Draw(add_text_img).text((x+5,y),line,font=font,fill=0)
+            y = y + line_height
+        return add_text_img
 
     def replace_text(self, img: Image) -> np.array:
         read_text = self.read_model(img)
@@ -286,18 +234,16 @@ class TextBoxLens(tk.Tk):
             translated_text = self.translate_text(read_text, self.tokenizer_zh, self.model_zh)
         else: # Language not defined
             return np.asarray(img)
+        if self.model_en2vi is not None and self.tokenizer_en2vi is not None:                           #| Uncomment these 2 lines to translate to Vietnamese
+            translated_text = self.translate_en2vi(translated_text)                                     #|
         print(read_text, '-',detectLanguage,'->', translated_text)
-        lines = self.get_wrapped_text(translated_text, img.size[0])
-        lines = list(filter(None, lines))                                                                       #________
-        line_width, line_height, font_scale = self.get_optimal_font_scale(max(lines, key=len), img.size[0])     #        \
-        max_w = line_width + 10 if line_width > img.size[0] else img.size[0]                                    #         \ Trying to make the largest place to put text
-        max_h = line_height*1.2*(len(lines)+1) if line_height*1.2*(len(lines)+1) > img.size[1] else img.size[1] #         /
-        empty_img = 255 * np.ones((int(max_h), int(max_w), 3), dtype=np.uint8)                                  #________/
-        return self.add_text_to_image(
-            empty_img,
-            '\n'.join(lines),
-            top_left_xy=(0, 0),
-            font_scale=font_scale
+        return self.draw_text(
+            font = ImageFont.truetype(r"assets\arial.ttf",13),
+            text = translated_text,
+            x = 0,
+            y = 0,
+            x_max = img.size[0],
+            y_max = img.size[1]
         )
     
     def clear_screen(self) -> None:
@@ -322,7 +268,7 @@ class TextBoxLens(tk.Tk):
                 bounding_boxes.sort(key=lambda x: x[1]) # Sort based on top of bboxes
                 for coor in bounding_boxes:
                     coor = list(map(int, coor)) #Convert float to int 
-                    self.temp_image = ImageTk.PhotoImage(Image.fromarray(self.replace_text(self.screen_img.crop((coor[0],coor[1], coor[2],coor[3])))))
+                    self.temp_image = ImageTk.PhotoImage(self.replace_text(self.screen_img.crop((coor[0],coor[1], coor[2],coor[3]))))
                     self.list_temp_imgs.append(self.temp_image)
                     self.bg_canvas.create_image(coor[0] + self.translate_area[0], 
                                                 coor[1] + self.translate_area[1], 
