@@ -22,6 +22,74 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+def measure_translate_area():
+    """
+    Measures the size of a drag operation and returns (x, y, w, h).
+    
+    Returns:
+        tuple: (x, y, width, height) of the dragged rectangle
+    """
+    root = tk.Tk()
+    root.wm_attributes("-topmost", 1)
+    root.config(background='gray') 
+    root.wm_attributes('-alpha', 0.5)
+    root.wm_attributes('-fullscreen', True)
+    root.attributes('-transparentcolor', 'green')    # Color green will become transparent
+    root.wm_attributes('-transparentcolor', 'green')
+    
+    # Variables to store coordinates and rectangle
+    start_x = [None]  # Using lists to allow modification in nested functions
+    start_y = [None]
+    rect_id = [None]
+    result = [None]   # To store the return value
+    
+    # Create a canvas to draw on
+    canvas = tk.Canvas(root, width=GetSystemMetrics(0), height=GetSystemMetrics(1), bg='black')
+    canvas.pack()
+    
+    def on_press(event):
+        start_x[0] = event.x
+        start_y[0] = event.y
+        rect_id[0] = canvas.create_rectangle(start_x[0], start_y[0], 
+                                           start_x[0], start_y[0],
+                                           outline='blue', dash=(5, 5), fill="green")
+    
+    def on_drag(event):
+        if start_x[0] is not None and rect_id[0] is not None:
+            canvas.coords(rect_id[0], start_x[0], start_y[0], event.x, event.y)
+    
+    def on_release(event):
+        if start_x[0] is not None:
+            # Calculate coordinates and size
+            x = min(start_x[0], event.x)  # Top-left x
+            y = min(start_y[0], event.y)  # Top-left y
+            width = abs(event.x - start_x[0])
+            height = abs(event.y - start_y[0])
+            
+            # Store result
+            result[0] = (x, y, width, height)
+            
+            # Clean up
+            canvas.delete(rect_id[0])
+            start_x[0] = None
+            start_y[0] = None
+            rect_id[0] = None
+            
+            # Exit the mainloop
+            root.quit()
+    
+    # Bind mouse events
+    canvas.bind('<Button-1>', on_press)
+    canvas.bind('<B1-Motion>', on_drag)
+    canvas.bind('<ButtonRelease-1>', on_release)
+    
+    # Run the event loop
+    root.mainloop()
+    
+    # Clean up and return
+    root.destroy()
+    return result[0] if result[0] is not None else (0, 0, 0, 0)
+
 class TextBoxLens(tk.Tk):
     def __init__(self, root):
         #Load model weights
@@ -36,6 +104,9 @@ class TextBoxLens(tk.Tk):
 
         #Set root
         self.root = root
+
+        #Translate area
+        self.translate_area = (0, 0, GetSystemMetrics(0), GetSystemMetrics(1))
         
         #Create Canvas to add translations
         self.bg_canvas = tk.Canvas(self.root, width=GetSystemMetrics(0), height=GetSystemMetrics(1), background='green', bd=0, highlightthickness=0)
@@ -47,27 +118,33 @@ class TextBoxLens(tk.Tk):
         self.temp_img = None
 
         #Make background and Canvas can be click through
-        self.hwnd = self.bg_canvas.winfo_id()
-        self.setClickthrough()
+        # self.hwnd = self.bg_canvas.winfo_id()
+        # self.setClickthrough()
 
         #Run OCR right after initialization complete
         # self.get_bounding_boxes()
 
         #Global key binding
-        # keyboard.add_hotkey('ctrl+space', self.get_bounding_boxes)
         keyboard.add_hotkey('`', self.get_bounding_boxes)
         keyboard.add_hotkey('ctrl+alt', self.quit)
         keyboard.add_hotkey('Shift+`', self.clear_screen)
 
-    def setClickthrough(self):
-        print("setting window properties")
-        try:
-            styles = win32gui.GetWindowLong(self.hwnd, win32con.GWL_EXSTYLE)
-            styles = win32con.WS_EX_TRANSPARENT
-            win32gui.SetWindowLong(self.hwnd, win32con.GWL_EXSTYLE, styles)
-            # win32gui.SetLayeredWindowAttributes(hwnd, 0, 255, win32con.LWA_ALPHA)
-        except Exception as e:
-            print(e)
+        # keyboard.add_hotkey('Shift+Q', self.setClickthrough)
+        keyboard.add_hotkey('Shift+W', self.getTranslateArea)
+
+    # def setClickthrough(self):
+    #     print("setting window properties")
+    #     try:
+    #         styles = win32gui.GetWindowLong(self.hwnd, win32con.GWL_EXSTYLE)
+    #         styles = win32con.WS_EX_TRANSPARENT
+    #         win32gui.SetWindowLong(self.hwnd, win32con.GWL_EXSTYLE, styles)
+    #         # win32gui.SetLayeredWindowAttributes(hwnd, 0, 255, win32con.LWA_ALPHA)
+    #     except Exception as e:
+    #         print(e)
+
+    def getTranslateArea(self):
+        # print(measure_drag_size())
+        self.translate_area = measure_translate_area()
 
     def translate_text(self, 
                        text: str, 
@@ -233,7 +310,7 @@ class TextBoxLens(tk.Tk):
     def get_bounding_boxes(self) -> None:
         self.clear_screen()
         if not self.bg_canvas.winfo_children():
-            self.screen_img = pyautogui.screenshot()
+            self.screen_img = pyautogui.screenshot(region=self.translate_area)
             # Convert the screenshot to a numpy array
             frame = np.array(self.screen_img)
             # Convert it from BGR(Blue, Green, Red) to
@@ -247,7 +324,10 @@ class TextBoxLens(tk.Tk):
                     coor = list(map(int, coor)) #Convert float to int 
                     self.temp_image = ImageTk.PhotoImage(Image.fromarray(self.replace_text(self.screen_img.crop((coor[0],coor[1], coor[2],coor[3])))))
                     self.list_temp_imgs.append(self.temp_image)
-                    self.bg_canvas.create_image(coor[0], coor[1], image = self.temp_image, anchor=tk.NW)
+                    self.bg_canvas.create_image(coor[0] + self.translate_area[0], 
+                                                coor[1] + self.translate_area[1], 
+                                                image = self.temp_image, 
+                                                anchor=tk.NW)
                     self.bg_canvas.update()
                 self.bg_canvas.pack()
             # root.after(2000, get_bounding_boxes)  # reschedule event in 2 seconds

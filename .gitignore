@@ -7,3 +7,4 @@ assets
 test_translate.py
 model
 lib/manga_ocr/models
+lib/*/__pycache__
