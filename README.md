@@ -12,6 +12,7 @@ https://github.com/user-attachments/assets/3b693bc5-8470-48cb-8f22-1a31f5d85b84
 - <code>`</code> (*Key Code: 192*) : detect and translate again
 - `Shift` + <code>`</code> : Clear screen
 - `Ctrl` + `Alt` : Quit
+- `Shift` + `W`: Get specific area of your screen to translate
 
 ## How to use
 Wait until your terminal show `OCR ready` then press <code>`</code> to start (Re-press if it not detect and show translation)
@@ -60,7 +61,8 @@ python app.py
 If you see this project is useful, don't forget to give star to these projects
 - [YOLO](https://github.com/ultralytics/ultralytics): I am using v12 (because It's new and I want to try it :smiley: )
 - [manga-ocr](https://github.com/kha-white/manga-ocr): To read text from image
-- [OPUS-MT](https://github.com/Helsinki-NLP/Opus-MT): offline and fast
+- [OPUS-MT](https://github.com/Helsinki-NLP/Opus-MT): translate offline and fast
+- [Lingua](https://github.com/pemistahl/lingua-py): Detect text language to pick translator
 - **This project**: Why not? :smiley:
 ## Contact
 For any inquiries, please feel free to contact me at nhatvipmason@gmail.com
