@@ -210,7 +210,8 @@ class TextBoxLens(tk.Tk):
         line_height = self.gettxtsize(text, font)[1] + 10
         print(x_max, y_max)
         lines = self.text_wrap(text,font, image_size)
-        w = x_max - x
+        longest_line = self.gettxtsize(max(lines, key=len), font)[0]+ 10
+        w = x_max - x if x_max - x > longest_line else longest_line
         h = y + (line_height*len(lines)) if y + (line_height*len(lines)) > y_max - y else y_max - y
         add_text_img = Image.fromarray(255 * np.ones((int(h), int(w), 3), dtype=np.uint8) )
         for line in lines:
@@ -221,21 +222,21 @@ class TextBoxLens(tk.Tk):
     def replace_text(self, img: Image) -> np.array:
         read_text = self.read_model(img)
         if not read_text: # Not detect text
-            return np.asarray(img)
+            return img
         try:
             detectLanguage = self.detector.detect_language_of((read_text)).iso_code_639_1.name.lower()
             # print(read_text, '-->', detectLanguage)
         except Exception as e: # Not detect language
             print(e)
-            return np.asarray(img)
+            return img
         if detectLanguage == 'ja':
             translated_text = self.translate_text(read_text, self.tokenizer_ja, self.model_ja)
         elif 'zh' in detectLanguage:
             translated_text = self.translate_text(read_text, self.tokenizer_zh, self.model_zh)
         else: # Language not defined
-            return np.asarray(img)
-        if self.model_en2vi is not None and self.tokenizer_en2vi is not None:                           #| Uncomment these 2 lines to translate to Vietnamese
-            translated_text = self.translate_en2vi(translated_text)                                     #|
+            return img
+        if self.model_en2vi is not None and self.tokenizer_en2vi is not None:
+            translated_text = self.translate_en2vi(translated_text)
         print(read_text, '-',detectLanguage,'->', translated_text)
         return self.draw_text(
             font = ImageFont.truetype(r"assets\arial.ttf",13),
