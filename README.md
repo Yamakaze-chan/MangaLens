@@ -46,12 +46,13 @@ YOLO_weight = MangaLens/best2.pt
 
 #MangaOCR weight
 MangaOCR_weight = ""
+MANGA_LANGUAGE_DETECTION_MODEL = MangaLens/manga_effnet_b0.onnx
 
 #Translation pretrained models
-ja_en_weight = Helsinki-NLP/opus-mt-ja-en
-ja_en_token = Helsinki-NLP/opus-mt-ja-en
-zh_en_weight = Helsinki-NLP/opus-mt-zh-en
-zh_en_token = Helsinki-NLP/opus-mt-zh-en
+JA_TRANS_MODEL = LiquidAI/LFM2-350M-ENJP-MT-GGUF
+ZH_TRANS_MODEL = quickmt/quickmt-zh-en
+ZH_READ_MODEL = jzhang533/PaddleOCR-VL-For-Manga
+KR_TRANS_MODEL = Helsinki-NLP/opus-mt-ko-en
 en_vi_weight = vinai/vinai-translate-en2vi-v2
 en_vi_token = vinai/vinai-translate-en2vi-v2
 ```
@@ -63,8 +64,11 @@ python app.py
 If you see this project is useful, don't forget to give star to these projects
 - [YOLO](https://github.com/ultralytics/ultralytics): I am using v12 (because It's new and I want to try it :smiley: )
 - [manga-ocr](https://github.com/kha-white/manga-ocr): To read text from image
+- [PaddleOCR-VL-For-Manga](https://huggingface.co/jzhang533/PaddleOCR-VL-For-Manga): This model OCR Chinese is really good
 - [OPUS-MT](https://github.com/Helsinki-NLP/Opus-MT): translate offline and fast
-- [Lingua](https://github.com/pemistahl/lingua-py): Detect text language to pick translator
+- [LFM2-350M-ENJP-MT](https://huggingface.co/LiquidAI/LFM2-350M-ENJP-MT): translate Japanese fast with the good result
+- [QuickMT-ZH-EN](https://huggingface.co/quickmt/quickmt-zh-en): translate Chinese good and fast
+- [EfficientNet](https://github.com/lukemelas/efficientnet-pytorch): Detect text language to pick translator
 - **This project**: Why not? :smiley:
 ## Contact
 For any inquiries, please feel free to contact me at nhatvipmason@gmail.com
