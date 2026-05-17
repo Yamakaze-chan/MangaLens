@@ -118,3 +118,6 @@ You can convert to desktop app with **PyInstaller**
 - [Document](https://pyinstaller.org/en/stable/)   
 - [Install](https://pypi.org/project/pyinstaller/)   
 In case you want to work with GUI instead of command line, [Auto PY to EXE](https://pypi.org/project/pyinstaller/) is my suggestion.
+
+## Disclaimer
+This is a personal, non-profit project developed completely independently. This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with mangalens.app or any other third-party organizations or individuals.
