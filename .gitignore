@@ -7,3 +7,4 @@ test_translate.py
 model
 lib/manga_ocr/models
 lib/*/__pycache__
+/llama-cpp-python

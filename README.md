@@ -47,11 +47,13 @@ YOLO_weight = MangaLens/best2.pt
 #MangaOCR weight
 MangaOCR_weight = ""
 
-#Translation pretrained models (OPUS-MT)
+#Translation pretrained models
 ja_en_weight = Helsinki-NLP/opus-mt-ja-en
 ja_en_token = Helsinki-NLP/opus-mt-ja-en
 zh_en_weight = Helsinki-NLP/opus-mt-zh-en
 zh_en_token = Helsinki-NLP/opus-mt-zh-en
+en_vi_weight = vinai/vinai-translate-en2vi-v2
+en_vi_token = vinai/vinai-translate-en2vi-v2
 ```
 - Step 7: Run and enjoy
 ```
@@ -88,6 +90,24 @@ For any inquiries, please feel free to contact me at nhatvipmason@gmail.com
   year = {2020},
   address = {Lisbon, Portugal}
  }
+```
+```
+@inproceedings{vinaitranslate,
+title     = {{A Vietnamese-English Neural Machine Translation System}},
+author    = {Thien Hai Nguyen and 
+             Tuan-Duy H. Nguyen and 
+             Duy Phung and 
+             Duy Tran-Cong Nguyen and 
+             Hieu Minh Tran and 
+             Manh Luong and 
+             Tin Duy Vo and 
+             Hung Hai Bui and 
+             Dinh Phung and 
+             Dat Quoc Nguyen},
+booktitle = {Proceedings of the 23rd Annual Conference of the International Speech Communication Association: Show and Tell (INTERSPEECH)},
+year      = {2022}
+}
+
 ```
 ## Convert to desktop app
 You can convert to desktop app with **PyInstaller**   
