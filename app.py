@@ -748,35 +748,35 @@ class ControlPanel(ctk.CTk):
         self.label.pack(pady=20)
  
         self.status_label = ctk.CTkLabel(
-            self, text="Trạng thái: Đang load model…", text_color="yellow"
+            self, text="Status: Loading model…", text_color="yellow"
         )
         self.status_label.pack(pady=5)
  
-        self.area_info = ctk.CTkLabel(self, text="Vùng: Toàn màn hình", font=("Arial", 11))
+        self.area_info = ctk.CTkLabel(self, text="Area: Fullscreen", font=("Arial", 11))
         self.area_info.pack(pady=5)
  
         self.btn_area = ctk.CTkButton(
-            self, text="Chọn vùng dịch (Shift+W)",
+            self, text="Select Translation Area (Shift+W)",
             command=lambda: self.lens.getTranslateArea(),
         )
         self.btn_area.pack(pady=10, padx=20, fill="x")
  
         self.btn_scan = ctk.CTkButton(
-            self, text="Dịch ngay ( ` )",
+            self, text="Translate Now ( ` )",
             fg_color="green", hover_color="darkgreen",
             command=lambda: self.lens.trigger_scan(),
         )
         self.btn_scan.pack(pady=10, padx=20, fill="x")
  
         self.btn_clear = ctk.CTkButton(
-            self, text="Xóa màn hình (Shift+`)",
+            self, text="Clear Screen (Shift+`)",
             fg_color="gray",
             command=lambda: self.lens.clear_screen(),
         )
         self.btn_clear.pack(pady=10, padx=20, fill="x")
  
         self.btn_quit = ctk.CTkButton(
-            self, text="Thoát (Ctrl+Alt)",
+            self, text="Quit (Ctrl+Alt)",
             fg_color="red", hover_color="darkred",
             command=lambda: self.lens.quit_all(),
         )
@@ -786,7 +786,7 @@ class ControlPanel(ctk.CTk):
         self.auto_frame.pack(pady=10, padx=20, fill="x")
  
         self.auto_switch = ctk.CTkSwitch(
-            self.auto_frame, text="TỰ ĐỘNG DỊCH TRANG",
+            self.auto_frame, text="AUTO TRANSLATE PAGE",
             command=self.handle_auto_switch,
             font=ctk.CTkFont(weight="bold"),
         )
