@@ -8,3 +8,4 @@ model
 lib/manga_ocr/models
 lib/*/__pycache__
 /llama-cpp-python
+__pycache__
