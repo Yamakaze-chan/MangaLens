@@ -1,5 +1,5 @@
-# <center>MangaLens</center>
-<text><center><strong>Read Manga directly on your screen</strong></center></text>
+# MangaLens
+<strong>Read Manga directly on your screen</strong>
 
 This project is real-time application that can OCR your screen and detect text in page of your manga.
 
